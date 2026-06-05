@@ -19,15 +19,15 @@
 //         const res = await fetch(
 //           "http://localhost:5000/api/dashboard/statistika"
 //         );
-  
+
 //         const data = await res.json();
-  
+
 //         console.log(data);
 //       } catch (error) {
 //         console.error(error);
 //       }
 //     };
-  
+
 //     loadData();
 //   }, []);
 
@@ -280,11 +280,205 @@
 //     </div>
 //   );
 // }
+
+// ////////
+// import React, { useEffect, useState } from "react";
+// import { BarChart3, RefreshCw } from "lucide-react";
+
+// export default function ReportsPage() {
+//   const [data, setData] = useState(null);
+//   const [filter, setFilter] = useState("kun");
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
+
+//   // ================= SAFE NUMBER =================
+//   const n = (v) => {
+//     if (v === null || v === undefined) return 0;
+//     if (typeof v === "number") return v;
+//     if (typeof v === "string") return Number(v) || 0;
+//     if (typeof v === "object") {
+//       return Number(v.summa || v.amount || v.value || v.total || 0);
+//     }
+//     return 0;
+//   };
+
+//   // ================= FETCH API WITH FILTER =================
+//   const fetchData = async (selectedFilter) => {
+//     setLoading(true);
+//     setError(null);
+
+//     try {
+//       const token = localStorage.getItem("user_token");
+
+//       const res = await fetch(
+//         `https://sifat-pmy2.onrender.com/api/hisobot?filter=${selectedFilter}`,
+//         {
+//           method: "GET",
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         },
+//       );
+
+//       if (!res.ok) throw new Error("Server error: " + res.status);
+
+//       const json = await res.json();
+
+//       console.log("FILTER DATA:", selectedFilter, json);
+
+//       setData(json);
+//     } catch (err) {
+//       setError(err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchData(filter);
+//   }, [filter]);
+
+//   // ================= DATA =================
+//   const sales = Array.isArray(data?.savdoTarixi) ? data.savdoTarixi : [];
+//   const payments = Array.isArray(data?.qarzTolovalari)
+//     ? data.qarzTolovalari
+//     : [];
+
+//   // ================= STATS =================
+//   const totalSales = sales.reduce((s, i) => s + n(i.summa), 0);
+
+//   const totalProfit = sales.reduce((sum, sale) => {
+//     const items = sale.mahsulotlar || [];
+//     return sum + items.reduce((a, b) => a + n(b.foyda), 0);
+//   }, 0);
+
+//   const cashSales = sales
+//     .filter((s) => s.tolovTuri === "NAQD")
+//     .reduce((a, b) => a + n(b.summa), 0);
+//   const cardSales = sales
+//     .filter((s) => s.tolovTuri === "KARTA")
+//     .reduce((a, b) => a + n(b.summa), 0);
+//   const debtSales = sales
+//     .filter((s) => s.tolovTuri === "NASIYA")
+//     .reduce((a, b) => a + n(b.summa), 0);
+
+//   const receivedDebts = payments.reduce((s, i) => s + n(i.amount), 0);
+
+//   // ================= FILTER BUTTONS =================
+//   const filters = [
+//     { id: "kun", label: "Kun" },
+//     { id: "hafta", label: "Hafta" },
+//     { id: "oy", label: "Oy" },
+//     { id: "yil", label: "Yil" },
+//   ];
+
+//   return (
+//     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-10 font-bold italic">
+//       <div className="max-w-7xl mx-auto space-y-8">
+//         {/* HEADER */}
+//         <div className="flex justify-between items-center bg-white p-8 rounded-[3rem]">
+//           <div className="flex items-center gap-3">
+//             <BarChart3 />
+//             <h1 className="text-2xl font-black">Hisobotlar</h1>
+//           </div>
+
+//           {/* FILTER BUTTONS */}
+//           <div className="flex gap-2 bg-slate-100 p-2 rounded-2xl">
+//             {filters.map((f) => (
+//               <button
+//                 key={f.id}
+//                 onClick={() => setFilter(f.id)}
+//                 className={`px-5 py-2 rounded-xl text-[10px] uppercase font-black transition ${
+//                   filter === f.id
+//                     ? "bg-white text-black shadow"
+//                     : "text-gray-400"
+//                 }`}
+//               >
+//                 {f.label}
+//               </button>
+//             ))}
+//           </div>
+
+//           {/* REFRESH */}
+//           <button
+//             onClick={() => fetchData(filter)}
+//             className="p-3 bg-slate-100 rounded-xl"
+//           >
+//             <RefreshCw className={loading ? "animate-spin" : ""} />
+//           </button>
+//         </div>
+
+//         {/* ERROR */}
+//         {error && (
+//           <div className="bg-red-50 text-red-600 p-4 rounded-xl">{error}</div>
+//         )}
+
+//         {/* STATS */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//           <div className="bg-slate-900 text-white p-8 rounded-[3rem]">
+//             <p>Umumiy Savdo</p>
+//             <h2 className="text-3xl">{totalSales.toLocaleString()} UZS</h2>
+//             <p className="text-xs mt-2">
+//               Naqd: {cashSales.toLocaleString()} | Karta:{" "}
+//               {cardSales.toLocaleString()} | Nasiya:{" "}
+//               {debtSales.toLocaleString()}
+//             </p>
+//           </div>
+
+//           <div className="bg-white p-8 rounded-[3rem]">
+//             <p>Sof Foyda</p>
+//             <h2 className="text-3xl text-green-600">
+//               {totalProfit.toLocaleString()} UZS
+//             </h2>
+//           </div>
+
+//           <div className="bg-white p-8 rounded-[3rem]">
+//             <p>Undirilgan Qarzlar</p>
+//             <h2 className="text-3xl text-blue-600">
+//               {receivedDebts.toLocaleString()} UZS
+//             </h2>
+//           </div>
+//         </div>
+
+//         {/* SALES LIST */}
+//         <div className="bg-white p-8 rounded-[3rem]">
+//           <h2 className="font-black mb-4">Savdo Tarixi ({filter})</h2>
+
+//           {sales.length === 0 ? (
+//             <p>Ma'lumot yo'q</p>
+//           ) : (
+//             sales.map((s, i) => (
+//               <div key={i} className="flex justify-between border-b py-3">
+//                 <div>
+//                   <p>{s.mijoz || "Noma'lum"}</p>
+//                   <p className="text-xs text-gray-400">{s.tolovTuri}</p>
+//                 </div>
+
+//                 <div className="text-right">
+//                   <p>{n(s.summa).toLocaleString()} UZS</p>
+
+//                   <p className="text-xs text-green-500">
+//                     +
+//                     {n(
+//                       s.mahsulotlar?.reduce((a, b) => a + n(b.foyda), 0),
+//                     ).toLocaleString()}{" "}
+//                     foyda
+//                   </p>
+//                 </div>
+//               </div>
+//             ))
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+/////
+
 import React, { useEffect, useState } from "react";
-import {
-  BarChart3,
-  RefreshCw,
-} from "lucide-react";
+import { BarChart3, RefreshCw } from "lucide-react";
 
 export default function ReportsPage() {
   const [data, setData] = useState(null);
@@ -292,7 +486,6 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ================= SAFE NUMBER =================
   const n = (v) => {
     if (v === null || v === undefined) return 0;
     if (typeof v === "number") return v;
@@ -303,14 +496,11 @@ export default function ReportsPage() {
     return 0;
   };
 
-  // ================= FETCH API WITH FILTER =================
   const fetchData = async (selectedFilter) => {
     setLoading(true);
     setError(null);
-
     try {
       const token = localStorage.getItem("user_token");
-
       const res = await fetch(
         `https://sifat-pmy2.onrender.com/api/hisobot?filter=${selectedFilter}`,
         {
@@ -319,15 +509,11 @@ export default function ReportsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
-
       if (!res.ok) throw new Error("Server error: " + res.status);
-
       const json = await res.json();
-
-      console.log("FILTER DATA:", selectedFilter, json);
-
+      console.log("HISOBOT DATA:", selectedFilter, json);
       setData(json);
     } catch (err) {
       setError(err.message);
@@ -340,25 +526,19 @@ export default function ReportsPage() {
     fetchData(filter);
   }, [filter]);
 
-  // ================= DATA =================
+  // ===== API dan kelgan fieldlarni ishlatamiz =====
   const sales = Array.isArray(data?.savdoTarixi) ? data.savdoTarixi : [];
-  const payments = Array.isArray(data?.qarzTolovalari) ? data.qarzTolovalari : [];
+  const payments = Array.isArray(data?.undirilganQarzlarRoyxati)
+    ? data.undirilganQarzlarRoyxati
+    : [];
 
-  // ================= STATS =================
-  const totalSales = sales.reduce((s, i) => s + n(i.summa), 0);
+  const totalSales = n(data?.umumiySavdo?.summa);
+  const cashSales = n(data?.umumiySavdo?.naqd);
+  const cardSales = n(data?.umumiySavdo?.karta);
+  const nasiyaSales = n(data?.umumiySavdo?.nasiya);
+  const totalProfit = n(data?.sofFoyda?.summa);
+  const receivedDebts = n(data?.undirilganQarzlarJami?.summa);
 
-  const totalProfit = sales.reduce((sum, sale) => {
-    const items = sale.mahsulotlar || [];
-    return sum + items.reduce((a, b) => a + n(b.foyda), 0);
-  }, 0);
-
-  const cashSales = sales.filter(s => s.tolovTuri === "NAQD").reduce((a, b) => a + n(b.summa), 0);
-  const cardSales = sales.filter(s => s.tolovTuri === "KARTA").reduce((a, b) => a + n(b.summa), 0);
-  const debtSales = sales.filter(s => s.tolovTuri === "NASIYA").reduce((a, b) => a + n(b.summa), 0);
-
-  const receivedDebts = payments.reduce((s, i) => s + n(i.amount), 0);
-
-  // ================= FILTER BUTTONS =================
   const filters = [
     { id: "kun", label: "Kun" },
     { id: "hafta", label: "Hafta" },
@@ -368,9 +548,7 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-10 font-bold italic">
-
       <div className="max-w-7xl mx-auto space-y-8">
-
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white p-8 rounded-[3rem]">
           <div className="flex items-center gap-3">
@@ -378,7 +556,6 @@ export default function ReportsPage() {
             <h1 className="text-2xl font-black">Hisobotlar</h1>
           </div>
 
-          {/* FILTER BUTTONS */}
           <div className="flex gap-2 bg-slate-100 p-2 rounded-2xl">
             {filters.map((f) => (
               <button
@@ -395,7 +572,6 @@ export default function ReportsPage() {
             ))}
           </div>
 
-          {/* REFRESH */}
           <button
             onClick={() => fetchData(filter)}
             className="p-3 bg-slate-100 rounded-xl"
@@ -406,19 +582,18 @@ export default function ReportsPage() {
 
         {/* ERROR */}
         {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl">
-            {error}
-          </div>
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl">{error}</div>
         )}
 
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
           <div className="bg-slate-900 text-white p-8 rounded-[3rem]">
             <p>Umumiy Savdo</p>
             <h2 className="text-3xl">{totalSales.toLocaleString()} UZS</h2>
             <p className="text-xs mt-2">
-              Naqd: {cashSales.toLocaleString()} | Karta: {cardSales.toLocaleString()} | Nasiya: {debtSales.toLocaleString()}
+              Naqd: {cashSales.toLocaleString()} | Karta:{" "}
+              {cardSales.toLocaleString()} | Nasiya:{" "}
+              {nasiyaSales.toLocaleString()}
             </p>
           </div>
 
@@ -435,43 +610,74 @@ export default function ReportsPage() {
               {receivedDebts.toLocaleString()} UZS
             </h2>
           </div>
-
         </div>
 
-        {/* SALES LIST */}
+        {/* SAVDO TARIXI */}
         <div className="bg-white p-8 rounded-[3rem]">
-          <h2 className="font-black mb-4">
-            Savdo Tarixi ({filter})
-          </h2>
+          <h2 className="font-black mb-4">Savdo Tarixi ({filter})</h2>
 
-          {sales.length === 0 ? (
-            <p>Ma'lumot yo'q</p>
+          {loading ? (
+            <p className="text-gray-400">Yuklanmoqda...</p>
+          ) : sales.length === 0 ? (
+            <p className="text-gray-400">Ma'lumot yo'q</p>
           ) : (
             sales.map((s, i) => (
-              <div key={i} className="flex justify-between border-b py-3">
-
+              <div
+                key={s.id || i}
+                className="flex justify-between border-b py-3"
+              >
                 <div>
                   <p>{s.mijoz || "Noma'lum"}</p>
+                  <p className="text-xs text-gray-400">{s.tolovTuri}</p>
                   <p className="text-xs text-gray-400">
-                    {s.tolovTuri}
+                    {new Date(s.sana).toLocaleString("uz-UZ")}
                   </p>
                 </div>
-
                 <div className="text-right">
                   <p>{n(s.summa).toLocaleString()} UZS</p>
-
                   <p className="text-xs text-green-500">
-                    +{n(
-                      s.mahsulotlar?.reduce((a, b) => a + n(b.foyda), 0)
-                    ).toLocaleString()} foyda
+                    +
+                    {n(
+                      s.mahsulotlar?.reduce((a, b) => a + n(b.foyda), 0),
+                    ).toLocaleString()}{" "}
+                    foyda
                   </p>
                 </div>
-
               </div>
             ))
           )}
         </div>
 
+        {/* UNDIRILGAN QARZLAR RO'YXATI */}
+        {payments.length > 0 && (
+          <div className="bg-white p-8 rounded-[3rem]">
+            <h2 className="font-black mb-4">
+              Undirilgan Qarzlar Ro'yxati ({filter})
+            </h2>
+            {payments.map((p, i) => (
+              <div
+                key={p.id || i}
+                className="flex justify-between border-b py-3"
+              >
+                <div>
+                  <p>{p.mijoz || "Noma'lum"}</p>
+                  {p.telefon && (
+                    <p className="text-xs text-gray-400">{p.telefon}</p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    {new Date(p.sana).toLocaleString("uz-UZ")}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-blue-600">
+                    +{n(p.summa).toLocaleString()} UZS
+                  </p>
+                  {p.izoh && <p className="text-xs text-gray-400">{p.izoh}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

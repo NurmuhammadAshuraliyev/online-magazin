@@ -222,10 +222,22 @@ export const apiService = {
   },
 
   // ================= SALES
+  // createSale: async (data) => {
+  //   return api.post("/sale", {
+  //     items: data.items,
+  //     paymentMethod: data.paymentMethod || "NAQD",
+  //   });
+  // },
+
   createSale: async (data) => {
     return api.post("/sale", {
-      items: data.items,
+      items: data.items.map((item) => ({
+        productId: item.productId || item.id, // faqat shu
+        quantityKg: Number(item.qty || item.quantityKg || 0), // faqat shu
+      })),
       paymentMethod: data.paymentMethod || "NAQD",
+      customerName: data.customerName || null,
+      customerPhone: data.customerPhone || null,
     });
   },
 
@@ -301,13 +313,30 @@ export const apiService = {
   },
 
   // ✅ POST /nasiya/mijoz — yangi mijoz + nasiya birga
+  // createDebtWithCustomer: async (data) => {
+  //   return api.post("/nasiya/mijoz", {
+  //     mijozIsmi: String(data.mijozIsmi || data.name || "").trim(),
+  //     telefon: data.telefon || data.phone || undefined,
+  //     aslSumma: Number(data.aslSumma || data.amount || 0),
+  //     izoh: data.izoh || undefined,
+  //   });
+  // },
+
+  // ✅ POST /nasiya/mijoz — yangi mijoz + nasiya birga
   createDebtWithCustomer: async (data) => {
-    return api.post("/nasiya/mijoz", {
+    const res = await api.post("/nasiya/mijoz", {
       mijozIsmi: String(data.mijozIsmi || data.name || "").trim(),
       telefon: data.telefon || data.phone || undefined,
       aslSumma: Number(data.aslSumma || data.amount || 0),
       izoh: data.izoh || undefined,
     });
+
+    // ✅ 400 javobini qo'lda tekshir
+    if (res?.statusCode === 400 || res?.error) {
+      throw new Error(res?.message || "Server xatosi");
+    }
+
+    return res;
   },
 
   // ✅ RAW — DebtsPage ichida parse qilinadi (toArray ISHLATILMAYDI)
