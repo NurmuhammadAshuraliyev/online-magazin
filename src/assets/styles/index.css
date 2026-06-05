@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-red: #991b1b;    /* To'q qizil */
+    --accent-gold: #fbbf24;    /* Tilla rang */
+    --dark-slate: #0f172a;     /* To'q fon */
+  }
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+/* Premium Meat Gradient */
+.gradient-primary {
+  @apply bg-gradient-to-br from-red-700 via-red-800 to-red-950;
+}
+
+.gradient-gold {
+  @apply bg-gradient-to-r from-amber-400 to-yellow-600;
+}
+
+.glass-card {
+  @apply bg-white/90 backdrop-blur-md border border-white/20 shadow-xl;
+}
