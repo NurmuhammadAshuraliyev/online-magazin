@@ -1079,7 +1079,19 @@ export default function DebtsPage() {
   
       try {
         const raw = await apiService.getNasiyaCustomers();
+  
+        console.log("====================================");
+        console.log("GET NASIYA CUSTOMERS RAW:");
+        console.log(raw);
+        console.log("====================================");
+  
         const arr = extractMijozlar(raw);
+  
+        console.log("====================================");
+        console.log("QARZDORLAR ARRAY:");
+        console.log(arr);
+        console.table(arr);
+        console.log("====================================");
   
         if (arr.length > 0) {
           result = arr.map(normalizeCustomer);
@@ -1088,11 +1100,22 @@ export default function DebtsPage() {
         console.warn("getNasiyaCustomers xatolik:", err?.message);
       }
   
-      // fallback 2
       if (result.length === 0) {
         try {
           const raw = await apiService.getDebts();
+  
+          console.log("====================================");
+          console.log("GET DEBTS RAW:");
+          console.log(raw);
+          console.log("====================================");
+  
           const arr = extractNasiyalar(raw);
+  
+          console.log("====================================");
+          console.log("NASIYALAR ARRAY:");
+          console.log(arr);
+          console.table(arr);
+          console.log("====================================");
   
           if (arr.length > 0) {
             result = arr.map(normalizeNasiya);
@@ -1101,6 +1124,12 @@ export default function DebtsPage() {
           console.warn("getDebts xatolik:", err?.message);
         }
       }
+  
+      console.log("====================================");
+      console.log("FINAL QARZDORLAR:");
+      console.log(result);
+      console.table(result);
+      console.log("====================================");
   
       setDebts(result);
     } catch (err) {
