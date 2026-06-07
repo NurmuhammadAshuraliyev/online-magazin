@@ -951,7 +951,7 @@ const Modal = ({ children, onClose, align = "center" }) => {
     >
       {children}
     </div>,
-    document.body,
+    document.body
   );
 };
 
@@ -984,14 +984,14 @@ const normalizeNasiya = (d = {}) => {
   const phone = mijoz.telefon || mijoz.phone || d.telefon || d.phone || "N/A";
   const totalDebt = Number(d.aslSumma || d.totalDebt || 0);
   const paidAmount = Number(
-    d.jamiTolangan || d.tolanganSumma || d.paidAmount || 0,
+    d.jamiTolangan || d.tolanganSumma || d.paidAmount || 0
   );
   const remainingDebt = Number(
     d.qolganQarz ??
       d.qolganSumma ??
       d.remainingDebt ??
       totalDebt - paidAmount ??
-      0,
+      0
   );
   return {
     id: String(d.id || d._id || Date.now()),
@@ -1031,7 +1031,7 @@ const extractMijozlar = (res) => {
 const findActiveNasiyaId = (nasiyalar, fallbackId) => {
   if (!nasiyalar || nasiyalar.length === 0) return fallbackId;
   const active = nasiyalar.find(
-    (n) => n.status === "ACTIVE" || Number(n.qolganQarz || 0) > 0,
+    (n) => n.status === "ACTIVE" || Number(n.qolganQarz || 0) > 0
   );
   return active?.id || nasiyalar[0]?.id || fallbackId;
 };
@@ -1076,45 +1076,40 @@ export default function DebtsPage() {
     try {
       setLoading(true);
       let result = [];
-
+  
       try {
         const raw = await apiService.getNasiyaCustomers();
         const arr = extractMijozlar(raw);
+  
         if (arr.length > 0) {
           result = arr.map(normalizeCustomer);
         }
       } catch (err) {
         console.warn("getNasiyaCustomers xatolik:", err?.message);
       }
-
+  
+      // fallback 2
       if (result.length === 0) {
         try {
           const raw = await apiService.getDebts();
           const arr = extractNasiyalar(raw);
-          if (arr.length > 0) result = arr.map(normalizeNasiya);
+  
+          if (arr.length > 0) {
+            result = arr.map(normalizeNasiya);
+          }
         } catch (err) {
           console.warn("getDebts xatolik:", err?.message);
         }
       }
-
-      if (result.length === 0) {
-        const local = JSON.parse(localStorage.getItem("debts") || "[]");
-        if (local.length > 0) {
-          result = local;
-        }
-      }
-
+  
       setDebts(result);
-      if (result.length > 0)
-        localStorage.setItem("debts", JSON.stringify(result));
     } catch (err) {
       console.error("loadDebts ERROR:", err);
-      setDebts(JSON.parse(localStorage.getItem("debts") || "[]"));
+      setDebts([]);
     } finally {
       setLoading(false);
     }
   };
-
   // ===================== DETAIL =====================
   const handleViewDetail = async (debt) => {
     setDetailDebt(debt);
@@ -1122,7 +1117,7 @@ export default function DebtsPage() {
     setDetailLoading(true);
     try {
       const res = await apiService.getCustomerDebtsRaw(
-        debt.customerId || debt.id,
+        debt.customerId || debt.id
       );
       const arr = extractNasiyalar(res);
       setDetailNasiyalar(arr);
@@ -1146,13 +1141,13 @@ export default function DebtsPage() {
       // ✅ 1-qadam: Telefon kiritilgan bo'lsa, avval bazada borligini tekshir
       if (newDebt.phone.trim()) {
         const searchRes = await apiService.getNasiyaCustomers(
-          newDebt.phone.trim(),
+          newDebt.phone.trim()
         );
         const mijozlar = extractMijozlar(searchRes);
         const topilgan = mijozlar.find(
           (m) =>
             (m.telefon || m.phone || "").replace(/\s/g, "") ===
-            newDebt.phone.trim().replace(/\s/g, ""),
+            newDebt.phone.trim().replace(/\s/g, "")
         );
 
         if (topilgan) {
@@ -1196,7 +1191,9 @@ export default function DebtsPage() {
         izoh: pendingDebtData.note || undefined,
       });
       toast.success(
-        `${existingCustomer.ism || existingCustomer.name} ga yangi qarz qo'shildi!`,
+        `${
+          existingCustomer.ism || existingCustomer.name
+        } ga yangi qarz qo'shildi!`
       );
       setExistingCustomer(null);
       setPendingDebtData(null);
@@ -1281,7 +1278,7 @@ export default function DebtsPage() {
       return toast.error("To'lov summasini kiriting!");
 
     const maxAmount = Number(
-      selectedDebt.remainingDebt || selectedDebt.totalDebt || 0,
+      selectedDebt.remainingDebt || selectedDebt.totalDebt || 0
     );
     if (amount > maxAmount)
       return toast.error(`Maksimal: ${maxAmount.toLocaleString()} UZS`);
@@ -1307,7 +1304,7 @@ export default function DebtsPage() {
       // ── ACTIVE nasiyani topamiz ──
       const activeNasiya =
         nasiyalarArr.find(
-          (n) => n.status === "ACTIVE" && Number(n.qolganQarz || 0) > 0,
+          (n) => n.status === "ACTIVE" && Number(n.qolganQarz || 0) > 0
         ) || nasiyalarArr[0];
 
       if (!activeNasiya?.id) {
@@ -1319,7 +1316,7 @@ export default function DebtsPage() {
       await apiService.payDebt(
         activeNasiya.id,
         amount,
-        paymentNote.trim() || undefined,
+        paymentNote.trim() || undefined
       );
 
       toast.success("To'lov qabul qilindi!");
@@ -1404,7 +1401,7 @@ export default function DebtsPage() {
 
   const totalDebt = filteredDebts.reduce(
     (s, d) => s + Number(d.remainingDebt || d.totalDebt || 0),
-    0,
+    0
   );
 
   if (loading)
@@ -1734,7 +1731,7 @@ export default function DebtsPage() {
               </p>
               <p className="text-2xl font-black text-rose-600">
                 {Number(
-                  selectedDebt.remainingDebt || selectedDebt.totalDebt || 0,
+                  selectedDebt.remainingDebt || selectedDebt.totalDebt || 0
                 ).toLocaleString()}{" "}
                 UZS
               </p>
@@ -1765,10 +1762,10 @@ export default function DebtsPage() {
               {[25, 50, 100].map((pct) => {
                 const val = Math.round(
                   (Number(
-                    selectedDebt.remainingDebt || selectedDebt.totalDebt || 0,
+                    selectedDebt.remainingDebt || selectedDebt.totalDebt || 0
                   ) *
                     pct) /
-                    100,
+                    100
                 );
                 return (
                   <button
@@ -1784,8 +1781,8 @@ export default function DebtsPage() {
                 onClick={() =>
                   setPaymentAmount(
                     String(
-                      selectedDebt.remainingDebt || selectedDebt.totalDebt || 0,
-                    ),
+                      selectedDebt.remainingDebt || selectedDebt.totalDebt || 0
+                    )
                   )
                 }
                 className="flex-1 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black"
@@ -1877,7 +1874,7 @@ export default function DebtsPage() {
               <p className="text-[9px] text-slate-400 uppercase">Jami qarz</p>
               <p className="text-2xl font-black text-rose-600">
                 {Number(
-                  detailDebt.remainingDebt || detailDebt.totalDebt || 0,
+                  detailDebt.remainingDebt || detailDebt.totalDebt || 0
                 ).toLocaleString()}{" "}
                 UZS
               </p>
@@ -1897,7 +1894,7 @@ export default function DebtsPage() {
                   const asl = Number(n.aslSumma || 0);
                   const qolgan = Number(n.qolganQarz || n.qolganSumma || 0);
                   const tolangan = Number(
-                    n.jamiTolangan || n.tolanganSumma || asl - qolgan || 0,
+                    n.jamiTolangan || n.tolanganSumma || asl - qolgan || 0
                   );
                   return (
                     <div
@@ -1928,7 +1925,11 @@ export default function DebtsPage() {
                           {qolgan.toLocaleString()}
                         </p>
                         <span
-                          className={`text-[8px] px-2 py-0.5 rounded-full ${n.status === "ACTIVE" ? "bg-rose-100 text-rose-500" : "bg-emerald-100 text-emerald-600"}`}
+                          className={`text-[8px] px-2 py-0.5 rounded-full ${
+                            n.status === "ACTIVE"
+                              ? "bg-rose-100 text-rose-500"
+                              : "bg-emerald-100 text-emerald-600"
+                          }`}
                         >
                           {n.status || "ACTIVE"}
                         </span>
