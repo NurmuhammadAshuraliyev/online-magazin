@@ -44,20 +44,24 @@ export default function SalesPage() {
     }
   };
 
-  // ── PRINT RECEIPT ─────────────────
   const printReceipt = (receipt) => {
     const COMPANY_NAME = "SIFAT BROYLER 066";
     const ADDRESS = "Yozyovon tumani";
     const PHONES = "+998 94 806 00 66, +998 90 301 17 11";
+  
     const fmt = (num) =>
       new Intl.NumberFormat("uz-UZ").format(Math.round(Number(num || 0)));
+  
     const payM = String(receipt.paymentMethod || "NAQD").toUpperCase();
+  
     const oldDebt = Number(receipt.oldDebt || 0);
     const newDebt = payM === "NASIYA" ? Number(receipt.total || 0) : 0;
+  
     const totalDebt =
       payM === "NASIYA"
         ? oldDebt + newDebt
         : Number(receipt.totalDebt || oldDebt || 0);
+  
     const hasDebt = oldDebt > 0 || totalDebt > 0;
 
     const html = `<html><head><style>
@@ -148,70 +152,100 @@ export default function SalesPage() {
 
   // ── COMPLETE SALE ─────────────────
   const handleCompleteSale = async () => {
-    if (!cart || cart.length === 0) return toast.error("Savat bo'sh!");
-
+    if (!cart || cart.length === 0)
+      return toast.error("Savat bo'sh!");
+  
     if (paymentMethod === "NASIYA") {
       if (!customerName.trim())
-        return toast.error("Nasiya uchun mijoz ismini kiriting!");
+        return toast.error("Mijoz ismini kiriting!");
       if (!customerPhone.trim())
-        return toast.error("Nasiya uchun telefon raqam kiriting!");
+        return toast.error("Telefon raqam kiriting!");
     }
-
+  
     try {
       setIsSubmitting(true);
-
+  
       const totalAmount = cart.reduce(
-        (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0),
-        0,
+        (sum, item) =>
+          sum + Number(item.price || 0) * Number(item.qty || 0),
+        0
       );
-
-      // ── API SALE ───────────────────
+  
+      // =========================
+      // 🔥 1. OLD DEBT FETCH (API)
+      // =========================
+      let oldDebt = 0;
+  
+      try {
+        if (paymentMethod === "NASIYA") {
+          const res = await apiService.getCustomerDebt({
+            name: customerName,
+            phone: customerPhone,
+          });
+  
+          oldDebt = res?.remainingDebt || res?.totalDebt || 0;
+        }
+      } catch (err) {
+        console.log("Debt API error:", err);
+  
+        // fallback (localStorage)
+        const debts = JSON.parse(localStorage.getItem("debts") || "[]");
+  
+        const found = debts.find((d) => {
+          const nameMatch =
+            (d.customerName || "").toLowerCase() ===
+            customerName.toLowerCase();
+  
+          return nameMatch;
+        });
+  
+        oldDebt = found?.remainingDebt || found?.totalDebt || 0;
+      }
+  
+      // =========================
+      // 🔥 2. CREATE SALE API
+      // =========================
       const salePayload = {
         items: cart.map((item) => ({
           productId: item.id || item.productId,
           quantityKg: Number(item.qty || 0),
           price: Number(item.price || 0),
         })),
-        paymentMethod, // NAQD | KARTA | NASIYA
+        paymentMethod,
         customerName: customerName || null,
         customerPhone: customerPhone || null,
       };
-
+  
       let saleId = Date.now();
-
+  
       try {
         const res = await apiService.createSale(salePayload);
         saleId = res?.id || res?.saleId || saleId;
-        console.log("SALE API:", res);
       } catch (err) {
-        console.error("SALE API ERROR:", err);
-        // API ishlamasa ham chek chiqaradi
+        console.log("Sale API error:", err);
       }
-
-      // ── NASIYA: local debt update ──
+  
+      // =========================
+      // 🔥 3. UPDATE LOCAL DEBT (NASIYA)
+      // =========================
       if (paymentMethod === "NASIYA") {
         const debts = JSON.parse(localStorage.getItem("debts") || "[]");
+  
         const name = customerName.trim().toLowerCase();
+  
         const existIdx = debts.findIndex(
           (d) =>
-            String(d.customerName || d.name || "")
-              .trim()
-              .toLowerCase() === name,
+            (d.customerName || "").trim().toLowerCase() === name
         );
-        const oldDebt =
-          existIdx >= 0
-            ? Number(
-                debts[existIdx].remainingDebt || debts[existIdx].totalDebt || 0,
-              )
-            : 0;
-
+  
         if (existIdx >= 0) {
-          debts[existIdx] = {
-            ...debts[existIdx],
-            totalDebt: oldDebt + totalAmount,
-            remainingDebt: oldDebt + totalAmount,
-            lastUpdate: new Date().toLocaleString(),
-          };
+          debts[existIdx].totalDebt =
+            Number(debts[existIdx].totalDebt || 0) + totalAmount;
+  
+          debts[existIdx].remainingDebt =
+            Number(debts[existIdx].remainingDebt || 0) + totalAmount;
+  
+          debts[existIdx].lastUpdate = new Date().toLocaleString();
         } else {
           debts.push({
             id: saleId,
@@ -224,9 +258,13 @@ export default function SalesPage() {
             items: [...cart],
           });
         }
+  
         localStorage.setItem("debts", JSON.stringify(debts));
       }
-
+  
+      // =========================
+      // 🔥 4. PRINT RECEIPT (FIXED)
+      // =========================
       printReceipt({
         id: saleId,
         customerName: customerName || "Naqd mijoz",
@@ -234,13 +272,20 @@ export default function SalesPage() {
         items: cart,
         total: totalAmount,
         paymentMethod,
+  
+        // ⭐⭐⭐ ENG MUHIM QATOR
+        oldDebt,
       });
-
+  
+      // =========================
+      // RESET STATE
+      // =========================
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
       setPaymentMethod("NAQD");
       setView("list");
+  
       toast.success("Sotuv yakunlandi!");
       loadData();
     } catch (err) {

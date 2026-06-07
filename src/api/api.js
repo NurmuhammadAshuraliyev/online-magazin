@@ -200,27 +200,38 @@ export const apiService = {
       return [];
     }
   },
-
   // ================= DASHBOARD
-  getDashboardStats: async (filter = "bugun") => {
-    try {
-      const res = await api.get(
-        `/dashboard/statistika/period?filter=${filter}`,
-      );
-      return res?.data || res;
-    } catch {
-      return {
-        totalSales: 0,
-        totalProfit: 0,
-        activeDebts: 0,
-        receivedDebtPayments: 0,
-        realSalesIncome: 0,
-        netCashFlow: 0,
-        totalExpectedMoney: 0,
-      };
-    }
-  },
+// ================= DASHBOARD
+getDashboardStats: async (period = "bugun") => {
+  try {
+    const res = await api.get("/dashboard/statistika", {
+      params: { period },
+    });
+    return res;
+  } catch (err) {
+    console.log("Dashboard error:", err);
+    return {};
+  }
+},
 
+getDashboardStats: async (period = "bugun") => {
+  const token = localStorage.getItem("user_token");
+
+  const res = await fetch(
+    `${VITE_BASE_URL}/dashboard/statistika?period=${period}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) throw new Error("Dashboard error");
+
+  return res.json();
+},
   // ================= SALES
   // createSale: async (data) => {
   //   return api.post("/sale", {

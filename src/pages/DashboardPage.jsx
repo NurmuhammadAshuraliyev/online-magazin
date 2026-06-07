@@ -136,9 +136,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-black uppercase italic text-slate-900">
               Statistika
             </h1>
-            <span className="text-[10px] bg-slate-900 text-white px-4 py-2 rounded-xl uppercase tracking-widest">
-              Live
-            </span>
+           
           </div>
 
           <div className="flex items-center gap-3">
@@ -190,52 +188,14 @@ export default function DashboardPage() {
                 <Banknote size={24} />
               </div>
               <p className="text-[10px] uppercase text-emerald-100 mb-1 font-black tracking-widest">
-                Real Kelgan Pul
+                Jami bolgan savdo 
               </p>
               <h2 className="text-3xl font-black tracking-tight">
                 {netCashFlow.toLocaleString()}{" "}
                 <span className="text-sm font-medium opacity-70">UZS</span>
               </h2>
-              <p className="text-[9px] mt-2 opacity-70 italic text-white uppercase">
-                Naqd/karta savdo + olingan qarzlar
-              </p>
+              
             </div>
-
-            {/* 2 — Undirilgan qarzlar */}
-            <Card
-              icon={<History size={22} />}
-              label="Undirilgan Qarzlar"
-              value={`${receivedDebts.toLocaleString()} UZS`}
-              sub="Qarzdor mijozlardan olingan pul"
-              accent="#3b82f6"
-            />
-
-            {/* 3 — Hali olinishi kerak */}
-            <Card
-              icon={<AlertCircle size={22} />}
-              label="Hali Olinishi Kerak"
-              value={`${activeDebts.toLocaleString()} UZS`}
-              sub="Qolgan nasiyalar"
-              accent="#f43f5e"
-            />
-
-            {/* 4 — Umumiy savdo */}
-            <Card
-              icon={<TrendingUp size={22} />}
-              label="Umumiy Savdo"
-              value={`${totalSales.toLocaleString()} UZS`}
-              sub="Naqd + karta + nasiya"
-              accent="#64748b"
-            />
-
-            {/* 5 — Kutilayotgan umumiy pul */}
-            <Card
-              icon={<Banknote size={22} />}
-              label="Kutilayotgan Umumiy Pul"
-              value={`${totalExpected.toLocaleString()} UZS`}
-              sub="Kelgan pul + qolgan qarzlar"
-              accent="#f59e0b"
-            />
 
             {/* 6 — Umumiy foyda (dark) */}
             <Card
@@ -249,17 +209,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── RAW DEBUG (only in dev) ── */}
-        {stats && import.meta.env.DEV && (
-          <details className="bg-white rounded-2xl p-4 border border-slate-100">
-            <summary className="text-[10px] uppercase text-slate-400 cursor-pointer font-black">
-              API Response (debug)
-            </summary>
-            <pre className="text-[10px] mt-2 overflow-auto text-slate-600">
-              {JSON.stringify(stats, null, 2)}
-            </pre>
-          </details>
-        )}
+       
       </div>
     </div>
   );
