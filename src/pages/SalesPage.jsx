@@ -22,7 +22,7 @@ export default function SalesPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [inputWeight, setInputWeight] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("+998");
   const [paymentMethod, setPaymentMethod] = useState("NAQD");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -175,33 +175,41 @@ export default function SalesPage() {
       // 🔥 1. OLD DEBT FETCH (API)
       // =========================
       let oldDebt = 0;
-  
+
       try {
-        if (paymentMethod === "NASIYA") {
-          const res = await apiService.getCustomerDebt({
-            name: customerName,
-            phone: customerPhone,
+        if (paymentMethod === "NASIYA" && customerPhone?.trim()) {
+      
+          const customersRes = await apiService.getNasiyaCustomers();
+      
+          const customers = customersRes?.mijozlar || [];
+      
+          const customer = customers.find((c) => {
+            const dbPhone = String(
+              c.telefon || ""
+            ).replace(/\D/g, "");
+      
+            const currentPhone = String(
+              customerPhone || ""
+            ).replace(/\D/g, "");
+      
+            return dbPhone === currentPhone;
           });
-  
-          oldDebt = res?.remainingDebt || res?.totalDebt || 0;
+      
+          if (customer?.id) {
+            const debtsRes =
+              await apiService.getCustomerDebtsRaw(customer.id);
+      
+            oldDebt = Number(
+              debtsRes?.mijoz?.totalDebt || 0
+            );
+      
+            console.log("OLD DEBT =", oldDebt);
+          }
         }
       } catch (err) {
-        console.log("Debt API error:", err);
-  
-        // fallback (localStorage)
-        const debts = JSON.parse(localStorage.getItem("debts") || "[]");
-  
-        const found = debts.find((d) => {
-          const nameMatch =
-            (d.customerName || "").toLowerCase() ===
-            customerName.toLowerCase();
-  
-          return nameMatch;
-        });
-  
-        oldDebt = found?.remainingDebt || found?.totalDebt || 0;
+        console.error(err);
       }
-  
+
       // =========================
       // 🔥 2. CREATE SALE API
       // =========================
@@ -282,7 +290,7 @@ export default function SalesPage() {
       // =========================
       setCart([]);
       setCustomerName("");
-      setCustomerPhone("");
+      setCustomerPhone("+998")
       setPaymentMethod("NAQD");
       setView("list");
   
@@ -439,13 +447,24 @@ export default function SalesPage() {
                 </div>
 
                 {paymentMethod === "NASIYA" && (
-                  <input
-                    type="text"
-                    placeholder="Telefon raqami (+998...)"
-                    className="w-full bg-slate-50 p-5 rounded-3xl outline-none font-black text-lg"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                  />
+                 <input
+                 type="text"
+                 placeholder="+998 __ ___ __ __"
+                 className="w-full bg-slate-50 p-5 rounded-3xl outline-none font-black text-lg"
+                 value={customerPhone}
+                 maxLength={13}
+                 onChange={(e) => {
+                   let value = e.target.value.replace(/\D/g, "");
+               
+                   if (value.startsWith("998")) {
+                     value = value.slice(3);
+                   }
+               
+                   value = value.slice(0, 9);
+               
+                   setCustomerPhone("+998" + value);
+                 }}
+               />
                 )}
               </div>
 

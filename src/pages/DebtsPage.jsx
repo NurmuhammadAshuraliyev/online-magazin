@@ -1303,59 +1303,70 @@ export default function DebtsPage() {
 
   const handlePayment = async () => {
     const amount = Number(paymentAmount);
-    if (!amount || amount <= 0)
+  
+    if (!amount || amount <= 0) {
       return toast.error("To'lov summasini kiriting!");
-
-    const maxAmount = Number(
-      selectedDebt.remainingDebt || selectedDebt.totalDebt || 0
-    );
-    if (amount > maxAmount)
-      return toast.error(`Maksimal: ${maxAmount.toLocaleString()} UZS`);
-
+    }
+  
     setPayLoading(true);
+  
     try {
-      // ── Avval customer ning nasiyalarini olamiz ──
       const customerId = selectedDebt.customerId || selectedDebt.id;
+  
       const res = await apiService.getCustomerDebtsRaw(customerId);
-
-      console.log("RAW nasiyalar response:", JSON.stringify(res));
-
-      // ── Barcha mumkin bo'lgan strukturalardan nasiyalar arrayini olamiz ──
+  
       let nasiyalarArr = [];
+  
       if (Array.isArray(res)) nasiyalarArr = res;
       else if (Array.isArray(res?.nasiyalar)) nasiyalarArr = res.nasiyalar;
       else if (Array.isArray(res?.data?.nasiyalar))
         nasiyalarArr = res.data.nasiyalar;
-      else if (Array.isArray(res?.data)) nasiyalarArr = res.data;
-
-      console.log("Nasiyalar array:", nasiyalarArr);
-
-      // ── ACTIVE nasiyani topamiz ──
-      const activeNasiya =
-        nasiyalarArr.find(
-          (n) => n.status === "ACTIVE" && Number(n.qolganQarz || 0) > 0
-        ) || nasiyalarArr[0];
-
-      if (!activeNasiya?.id) {
-        return toast.error("Faol nasiya topilmadi!");
+      else if (Array.isArray(res?.data))
+        nasiyalarArr = res.data;
+  
+      const activeDebts = nasiyalarArr
+        .filter((n) => Number(n.qolganQarz || 0) > 0)
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt || a.yaratilgan) -
+            new Date(b.createdAt || b.yaratilgan)
+        );
+  
+      let remainingPayment = amount;
+  
+      for (const debt of activeDebts) {
+        if (remainingPayment <= 0) break;
+  
+        const debtAmount = Number(debt.qolganQarz || 0);
+  
+        const paymentForThisDebt = Math.min(
+          remainingPayment,
+          debtAmount
+        );
+  
+        await apiService.payDebt(
+          debt.id,
+          paymentForThisDebt,
+          paymentNote.trim() || undefined
+        );
+  
+        remainingPayment -= paymentForThisDebt;
       }
-
-      console.log("To'lov yuborilayotgan nasiyaId:", activeNasiya.id);
-
-      await apiService.payDebt(
-        activeNasiya.id,
-        amount,
-        paymentNote.trim() || undefined
-      );
-
-      toast.success("To'lov qabul qilindi!");
+  
+      toast.success("To'lov muvaffaqiyatli qabul qilindi!");
+  
       setSelectedDebt(null);
       setPaymentAmount("");
       setPaymentNote("");
-      setTimeout(() => loadDebts(), 800);
+  
+      setTimeout(() => {
+        loadDebts();
+      }, 800);
     } catch (err) {
-      console.error("PAYMENT ERROR:", err);
-      toast.error("To'lovda xatolik: " + (err?.message || ""));
+      console.error(err);
+      toast.error(
+        "To'lovda xatolik: " + (err?.message || "")
+      );
     } finally {
       setPayLoading(false);
     }
@@ -1595,14 +1606,23 @@ export default function DebtsPage() {
                 }
               />
               <input
-                type="text"
-                placeholder="+998 __ ___ __ __"
-                className="w-full bg-slate-50 p-4 rounded-2xl outline-none"
-                value={newDebt.phone}
-                onChange={(e) =>
-                  setNewDebt({ ...newDebt, phone: e.target.value })
-                }
-              />
+  type="text"
+  placeholder="+998 __ ___ __ __"
+  className="w-full bg-slate-50 p-4 rounded-2xl outline-none"
+  value={newDebt.phone || "+998"}
+  onChange={(e) => {
+    let value = e.target.value;
+
+    if (!value.startsWith("+998")) {
+      value = "+998";
+    }
+
+    setNewDebt({
+      ...newDebt,
+      phone: value,
+    });
+  }}
+/>
               <input
                 type="number"
                 required
