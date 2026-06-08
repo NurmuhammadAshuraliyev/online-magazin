@@ -560,3 +560,594 @@ const CashFlowPage = () => {
 };
 
 export default CashFlowPage;
+
+////////////////
+
+// import React, { useState, useEffect, useRef, useCallback } from "react";
+// import {
+//   Plus,
+//   Trash2,
+//   Wallet,
+//   ArrowUpRight,
+//   ArrowDownLeft,
+//   Search,
+//   Filter,
+//   Calendar,
+//   RefreshCw,
+//   AlertCircle,
+//   CheckCircle,
+//   X,
+//   TrendingUp,
+// } from "lucide-react";
+
+// import { apiService } from "../api/api";
+
+// // ─── TOAST ────────────────────────────────────────────────────
+// const Toast = ({ msg, type, onClose }) => (
+//   <div
+//     style={{
+//       position: "fixed",
+//       bottom: 24,
+//       right: 24,
+//       zIndex: 9999,
+//       background: type === "error" ? "#991b1b" : "#065f46",
+//       color: "#fff",
+//       borderRadius: 14,
+//       padding: "12px 20px",
+//       display: "flex",
+//       alignItems: "center",
+//       gap: 10,
+//       boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+//       fontSize: 14,
+//       fontWeight: 600,
+//       animation: "slideUp 0.3s ease",
+//     }}
+//   >
+//     {type === "error" ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+//     {msg}
+//     <button
+//       onClick={onClose}
+//       style={{
+//         background: "none",
+//         border: "none",
+//         color: "#fff",
+//         cursor: "pointer",
+//         marginLeft: 8,
+//       }}
+//     >
+//       <X size={16} />
+//     </button>
+//   </div>
+// );
+
+// const PERIODS = [
+//   { value: "bugun", label: "Bugun" },
+//   { value: "hafta", label: "Hafta" },
+//   { value: "oy", label: "Oy" },
+//   { value: "yil", label: "Yil" },
+// ];
+
+// const CashFlowPage = () => {
+//   const [transactions, setTransactions] = useState([]);
+//   const [stats, setStats] = useState({
+//     balance: 0,
+//     totalIncome: 0,
+//     totalExpense: 0,
+//   });
+//   const [loading, setLoading] = useState(true);
+//   const [submitting, setSubmitting] = useState(false);
+//   const [toast, setToast] = useState(null);
+
+//   const [amount, setAmount] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [type, setType] = useState("income");
+//   const [search, setSearch] = useState("");
+//   const [filter, setFilter] = useState("bugun");
+
+//   // Ref to track latest filter+search so debounce always uses fresh values
+//   const filterRef = useRef(filter);
+//   const searchRef = useRef(search);
+//   filterRef.current = filter;
+//   searchRef.current = search;
+
+//   const notify = (msg, t = "success") => {
+//     setToast({ msg, type: t });
+//     setTimeout(() => setToast(null), 3500);
+//   };
+
+//   // ── LOAD ──────────────────────────────────────────────────────
+//   const loadKassa = useCallback(async (f, s) => {
+//     const activeFilter = f ?? filterRef.current;
+//     const activeSearch = s ?? searchRef.current;
+//     setLoading(true);
+//     try {
+//       const kassaRes = await apiService.getKassa(activeFilter, activeSearch);
+//       console.log("KASSA RES:", kassaRes);
+
+//       // Support both wrapped ({ data: ... }) and unwrapped responses
+//       const kData = kassaRes?.data ?? kassaRes ?? {};
+//       const txList = kData?.tarixiyHarakatlar ?? kData?.transactions ?? [];
+
+//       setTransactions(Array.isArray(txList) ? txList : []);
+//       setStats({
+//         balance: Number(kData?.umumiyQoldiq ?? kData?.balance ?? 0),
+//         totalIncome: Number(kData?.jamiKirim ?? kData?.totalIncome ?? 0),
+//         totalExpense: Number(kData?.jamiChiqim ?? kData?.totalExpense ?? 0),
+//       });
+//     } catch (err) {
+//       console.error("KASSA LOAD ERROR:", err);
+//       notify("Ma'lumotlarni yuklashda xatolik", "error");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, []); // no deps — uses refs
+
+//   // Load when filter changes
+//   useEffect(() => {
+//     loadKassa(filter, search);
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [filter]);
+
+//   // Debounced search — does NOT re-trigger on filter change
+//   useEffect(() => {
+//     const timer = setTimeout(() => {
+//       loadKassa(filter, search);
+//     }, 500);
+//     return () => clearTimeout(timer);
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [search]);
+
+//   // ── ADD ───────────────────────────────────────────────────────
+//   const handleAdd = async (e) => {
+//     e.preventDefault();
+//     const trimmedDesc = description.trim();
+//     if (!amount || Number(amount) <= 0) {
+//       notify("Summa 0 dan katta bo'lishi shart!", "error");
+//       return;
+//     }
+//     if (!trimmedDesc || trimmedDesc.length < 2) {
+//       notify("Izoh kamida 2 ta belgi bo'lishi shart!", "error");
+//       return;
+//     }
+
+//     setSubmitting(true);
+//     try {
+//       await apiService.addKassaHarakat({
+//         type,
+//         summa: Number(amount),
+//         izoh: trimmedDesc,
+//       });
+//       notify(
+//         type === "income"
+//           ? "✅ Kirim muvaffaqiyatli qo'shildi!"
+//           : "✅ Chiqim muvaffaqiyatli qo'shildi!",
+//       );
+//       setAmount("");
+//       setDescription("");
+//       // Reload with current filter/search
+//       loadKassa(filter, search);
+//     } catch (err) {
+//       console.error("KASSA ADD ERROR:", err);
+//       notify("Qo'shishda xatolik yuz berdi", "error");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+
+//   // ── DELETE ────────────────────────────────────────────────────
+//   const deleteItem = async (id) => {
+//     if (!window.confirm("Ushbu amalni o'chirmoqchimisiz?")) return;
+//     try {
+//       await apiService.deleteKassaHarakat(id);
+//       notify("O'chirildi!");
+//       loadKassa(filter, search);
+//     } catch {
+//       notify("O'chirishda xatolik", "error");
+//     }
+//   };
+
+//   // ── LOCAL SEARCH FILTER (client-side fallback) ─────────────
+//   const filtered = transactions.filter((t) => {
+//     if (!search.trim()) return true;
+//     const desc = (t.izoh || t.description || "").toLowerCase();
+//     return desc.includes(search.toLowerCase());
+//   });
+
+//   return (
+//     <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+//       <style>{`
+//         @keyframes slideUp { from { transform:translateY(20px);opacity:0 } to { transform:translateY(0);opacity:1 } }
+//         @keyframes spin { to { transform:rotate(360deg) } }
+//       `}</style>
+
+//       {toast && (
+//         <Toast
+//           msg={toast.msg}
+//           type={toast.type}
+//           onClose={() => setToast(null)}
+//         />
+//       )}
+
+//       {/* ── HEADER ── */}
+//       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+//         <div>
+//           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+//             Kassa <span className="text-blue-600">Nazorati</span>
+//           </h1>
+//           <p className="text-slate-400 text-sm font-medium mt-1">
+//             Barcha kirim va chiqimlarni real vaqtda boshqaring
+//           </p>
+//         </div>
+//         <div className="flex items-center gap-3 flex-wrap">
+//           {PERIODS.map((p) => (
+//             <button
+//               key={p.value}
+//               onClick={() => setFilter(p.value)}
+//               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm border ${
+//                 filter === p.value
+//                   ? "bg-blue-600 text-white border-blue-600 shadow-blue-200"
+//                   : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"
+//               }`}
+//             >
+//               <Calendar size={14} /> {p.label}
+//             </button>
+//           ))}
+//           <button
+//             onClick={() => loadKassa(filter, search)}
+//             disabled={loading}
+//             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-100 rounded-2xl text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+//             title="Yangilash"
+//           >
+//             <RefreshCw
+//               size={14}
+//               style={loading ? { animation: "spin 1s linear infinite" } : {}}
+//             />
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* ── STATS CARDS ── */}
+//       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//         {/* Balance */}
+//         <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-8 rounded-[35px] text-white shadow-2xl shadow-slate-200 group transition-transform hover:scale-[1.01]">
+//           <div className="absolute -right-8 -top-8 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl group-hover:bg-blue-600/30 transition-all" />
+//           <div className="relative z-10">
+//             <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
+//               <Wallet size={24} className="text-blue-400" />
+//             </div>
+//             <p className="text-[11px] font-black uppercase tracking-[3px] text-slate-400">
+//               Umumiy qoldiq
+//             </p>
+//             {loading ? (
+//               <div className="h-10 w-32 bg-white/10 rounded-xl mt-2 animate-pulse" />
+//             ) : (
+//               <h3
+//                 className={`text-4xl font-black mt-2 tracking-tighter tabular-nums ${
+//                   stats.balance < 0 ? "text-rose-400" : "text-white"
+//                 }`}
+//               >
+//                 {stats.balance.toLocaleString()}{" "}
+//                 <span className="text-lg font-medium opacity-50 font-sans tracking-normal">
+//                   UZS
+//                 </span>
+//               </h3>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* Income */}
+//         <div className="bg-white p-8 rounded-[35px] border border-slate-50 shadow-xl shadow-slate-200/40 flex items-center gap-6 group transition-all hover:border-emerald-100">
+//           <div className="w-16 h-16 bg-emerald-50 rounded-3xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+//             <ArrowUpRight size={32} />
+//           </div>
+//           <div>
+//             <p className="text-[11px] font-black text-slate-400 uppercase tracking-[2px]">
+//               Jami Kirim
+//             </p>
+//             {loading ? (
+//               <div className="h-7 w-28 bg-slate-100 rounded-lg mt-1 animate-pulse" />
+//             ) : (
+//               <h4 className="text-2xl font-black text-emerald-600 mt-1 tabular-nums">
+//                 +{stats.totalIncome.toLocaleString()}
+//               </h4>
+//             )}
+//             <p className="text-[10px] text-slate-300 mt-1 uppercase tracking-wider">
+//               {PERIODS.find((p) => p.value === filter)?.label}
+//             </p>
+//           </div>
+//         </div>
+
+//         {/* Expense */}
+//         <div className="bg-white p-8 rounded-[35px] border border-slate-50 shadow-xl shadow-slate-200/40 flex items-center gap-6 group transition-all hover:border-rose-100">
+//           <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+//             <ArrowDownLeft size={32} />
+//           </div>
+//           <div>
+//             <p className="text-[11px] font-black text-slate-400 uppercase tracking-[2px]">
+//               Jami Chiqim
+//             </p>
+//             {loading ? (
+//               <div className="h-7 w-28 bg-slate-100 rounded-lg mt-1 animate-pulse" />
+//             ) : (
+//               <h4 className="text-2xl font-black text-rose-500 mt-1 tabular-nums">
+//                 -{stats.totalExpense.toLocaleString()}
+//               </h4>
+//             )}
+//             <p className="text-[10px] text-slate-300 mt-1 uppercase tracking-wider">
+//               {PERIODS.find((p) => p.value === filter)?.label}
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ── Net Profit Bar ── */}
+//       {!loading && (stats.totalIncome > 0 || stats.totalExpense > 0) && (
+//         <div className="bg-white p-6 rounded-[30px] border border-slate-50 shadow-sm">
+//           <div className="flex items-center justify-between mb-3">
+//             <div className="flex items-center gap-2">
+//               <TrendingUp size={16} className="text-blue-500" />
+//               <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+//                 Sof foyda
+//               </span>
+//             </div>
+//             <span
+//               className={`text-sm font-black tabular-nums ${
+//                 stats.totalIncome - stats.totalExpense >= 0
+//                   ? "text-emerald-600"
+//                   : "text-rose-500"
+//               }`}
+//             >
+//               {(stats.totalIncome - stats.totalExpense).toLocaleString()} UZS
+//             </span>
+//           </div>
+//           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+//             <div
+//               className="h-full bg-emerald-400 rounded-full transition-all duration-700"
+//               style={{
+//                 width:
+//                   stats.totalIncome + stats.totalExpense > 0
+//                     ? `${Math.min(
+//                         100,
+//                         (stats.totalIncome /
+//                           (stats.totalIncome + stats.totalExpense)) *
+//                           100,
+//                       )}%`
+//                     : "0%",
+//               }}
+//             />
+//           </div>
+//           <div className="flex justify-between mt-1">
+//             <span className="text-[10px] text-emerald-500 font-bold">
+//               Kirim
+//             </span>
+//             <span className="text-[10px] text-rose-400 font-bold">Chiqim</span>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* ── INPUT FORM ── */}
+//       <div className="bg-white/60 backdrop-blur-md p-2 rounded-[40px] border border-white shadow-sm">
+//         <div className="bg-white p-6 lg:p-8 rounded-[35px] shadow-inner border border-slate-50">
+//           <form
+//             onSubmit={handleAdd}
+//             className="grid grid-cols-1 md:grid-cols-12 gap-6"
+//           >
+//             {/* Type */}
+//             <div className="md:col-span-3">
+//               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">
+//                 Amal turi
+//               </label>
+//               <select
+//                 value={type}
+//                 onChange={(e) => setType(e.target.value)}
+//                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 font-bold text-sm outline-none transition-all appearance-none cursor-pointer"
+//               >
+//                 <option value="income">💰 Kirim</option>
+//                 <option value="expense">💸 Chiqim</option>
+//               </select>
+//             </div>
+
+//             {/* Amount */}
+//             <div className="md:col-span-3">
+//               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">
+//                 Summa (UZS)
+//               </label>
+//               <input
+//                 type="number"
+//                 value={amount}
+//                 onChange={(e) => setAmount(e.target.value)}
+//                 placeholder="0"
+//                 min="1"
+//                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 font-bold text-sm outline-none transition-all"
+//               />
+//             </div>
+
+//             {/* Description */}
+//             <div className="md:col-span-4">
+//               <label className="text-[10px] font-black uppercase text-slate-400 ml-4 mb-2 block">
+//                 Batafsil izoh
+//               </label>
+//               <input
+//                 type="text"
+//                 value={description}
+//                 onChange={(e) => setDescription(e.target.value)}
+//                 placeholder="Nima uchun? (kamida 2 belgi)"
+//                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 font-bold text-sm outline-none transition-all"
+//               />
+//             </div>
+
+//             {/* Submit */}
+//             <div className="md:col-span-2 flex items-end">
+//               <button
+//                 type="submit"
+//                 disabled={submitting}
+//                 className={`w-full p-4 rounded-2xl font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 text-white disabled:opacity-60 ${
+//                   type === "income"
+//                     ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 hover:shadow-emerald-300"
+//                     : "bg-rose-500 hover:bg-rose-600 shadow-rose-200 hover:shadow-rose-300"
+//                 }`}
+//               >
+//                 {submitting ? (
+//                   <RefreshCw
+//                     size={18}
+//                     style={{ animation: "spin 1s linear infinite" }}
+//                   />
+//                 ) : (
+//                   <Plus size={20} strokeWidth={3} />
+//                 )}
+//                 {type === "income" ? "KIRIM" : "CHIQIM"}
+//               </button>
+//             </div>
+//           </form>
+//         </div>
+//       </div>
+
+//       {/* ── TRANSACTIONS TABLE ── */}
+//       <div className="space-y-6">
+//         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+//           <h3 className="text-xl font-black text-slate-800 uppercase italic flex items-center gap-2">
+//             <Filter size={20} className="text-blue-600" /> Tarixiy harakatlar
+//             {!loading && (
+//               <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg normal-case not-italic">
+//                 {filtered.length} ta
+//               </span>
+//             )}
+//           </h3>
+//           <div className="relative w-full sm:w-80">
+//             <Search
+//               className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
+//               size={18}
+//             />
+//             <input
+//               type="text"
+//               placeholder="Tranzaksiyalardan qidirish..."
+//               value={search}
+//               onChange={(e) => setSearch(e.target.value)}
+//               className="w-full pl-12 pr-6 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm shadow-sm outline-none focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+//             />
+//             {search && (
+//               <button
+//                 onClick={() => setSearch("")}
+//                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500"
+//               >
+//                 <X size={16} />
+//               </button>
+//             )}
+//           </div>
+//         </div>
+
+//         <div className="bg-white rounded-[40px] border border-slate-50 overflow-hidden shadow-sm">
+//           <div className="overflow-x-auto">
+//             <table className="w-full text-left">
+//               <thead>
+//                 <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[3px] bg-slate-50/50">
+//                   <th className="px-8 py-5">Vaqt va Sana</th>
+//                   <th className="px-8 py-5">Izoh</th>
+//                   <th className="px-8 py-5 text-center">Turi</th>
+//                   <th className="px-8 py-5 text-right">Miqdor</th>
+//                   <th className="px-8 py-5 text-center">Amal</th>
+//                 </tr>
+//               </thead>
+//               <tbody className="divide-y divide-slate-50">
+//                 {loading ? (
+//                   [...Array(4)].map((_, i) => (
+//                     <tr key={i}>
+//                       {[...Array(5)].map((_, j) => (
+//                         <td key={j} className="px-8 py-5">
+//                           <div className="h-4 bg-slate-100 rounded-lg animate-pulse" />
+//                         </td>
+//                       ))}
+//                     </tr>
+//                   ))
+//                 ) : filtered.length === 0 ? (
+//                   <tr>
+//                     <td colSpan={5}>
+//                       <div className="py-24 text-center">
+//                         <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+//                           <Wallet size={32} className="text-slate-200" />
+//                         </div>
+//                         <p className="text-slate-400 font-bold italic uppercase text-xs tracking-widest">
+//                           {search
+//                             ? `"${search}" bo'yicha natija topilmadi`
+//                             : "Hozircha hech qanday ma'lumot yo'q"}
+//                         </p>
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   filtered.map((tx) => {
+//                     // Normalize fields — backend sends both uz and en variants
+//                     const txType = (tx.turi || tx.type || "").toUpperCase();
+//                     const txAmount = Number(
+//                       tx.summa || tx.amount || tx.miqdor || 0,
+//                     );
+//                     const txDesc = tx.izoh || tx.description || "—";
+//                     const rawDate = tx.createdAt || tx.sana;
+//                     const txDate = rawDate
+//                       ? new Date(rawDate).toLocaleString("uz-UZ", {
+//                           hour12: false,
+//                         })
+//                       : "—";
+//                     const isExpense =
+//                       txType === "CHIQIM" || txType === "EXPENSE";
+
+//                     return (
+//                       <tr
+//                         key={tx.id}
+//                         className="hover:bg-slate-50/50 transition-colors group"
+//                       >
+//                         <td className="px-8 py-5">
+//                           <div className="text-[11px] font-bold text-slate-400 bg-slate-50 inline-block px-3 py-1 rounded-lg whitespace-nowrap">
+//                             {txDate}
+//                           </div>
+//                         </td>
+//                         <td className="px-8 py-5">
+//                           <span className="text-sm font-bold text-slate-700 capitalize">
+//                             {txDesc}
+//                           </span>
+//                         </td>
+//                         <td className="px-8 py-5 text-center">
+//                           <span
+//                             className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${
+//                               !isExpense
+//                                 ? "bg-emerald-100 text-emerald-600"
+//                                 : "bg-rose-100 text-rose-600"
+//                             }`}
+//                           >
+//                             {!isExpense ? "Kirim" : "Chiqim"}
+//                           </span>
+//                         </td>
+//                         <td
+//                           className={`px-8 py-5 text-right font-black text-base tabular-nums ${
+//                             !isExpense ? "text-emerald-500" : "text-rose-500"
+//                           }`}
+//                         >
+//                           {!isExpense ? "+" : "-"}
+//                           {txAmount.toLocaleString()}
+//                           <span className="text-xs text-slate-300 ml-1">
+//                             UZS
+//                           </span>
+//                         </td>
+//                         <td className="px-8 py-5 text-center">
+//                           <button
+//                             onClick={() => deleteItem(tx.id)}
+//                             className="p-2.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+//                             title="O'chirish"
+//                           >
+//                             <Trash2 size={16} />
+//                           </button>
+//                         </td>
+//                       </tr>
+//                     );
+//                   })
+//                 )}
+//               </tbody>
+//             </table>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default CashFlowPage;
